@@ -1,0 +1,69 @@
+# ========== Python ==========
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ========== 虚拟环境 ==========
+venv/
+.venv/
+env/
+ENV/
+
+# ========== PyInstaller ==========
+build/
+dist/
+*.spec.bak
+*.manifest
+*.toc
+
+# ========== IDE ==========
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ========== 操作系统 ==========
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========== 临时文件 ==========
+*.log
+*.tmp
+*.bak
+
+# ========== 数据库备份 ==========
+*_backup*.db
+tools_backup_5tools.db
+
+# ========== 脚本临时输出 ==========
+scripts/all_tools_raw.json
+scripts/all_tools_cleaned.json
+scripts/all_tools_translated.json
+scripts/all_tools_final.json
+scripts/kali_tools_batch.json
+scripts/kali_tools_cleaned.json
+scripts/kali_tools_enriched.json
+scripts/kali_tools_final.json
+scripts/kali_tools_translated.json
+scripts/test_output*.json
+scripts/kali_sitemap.xml
