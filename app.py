@@ -1,8 +1,11 @@
 import webview
 import sys
 import os
+import pathlib
+import socket
 import time
 import threading
+import urllib.request
 import uvicorn
 
 
@@ -18,6 +21,29 @@ BACKEND_DIR = os.path.join(BASE_DIR, 'backend')
 FRONTEND_HTML = os.path.join(BASE_DIR, 'frontend', 'index.html')
 
 sys.path.insert(0, BACKEND_DIR)
+
+
+# ========== 端口选择 ==========
+def pick_free_port():
+    """找一个空闲的本机端口，避免 8000 被占用导致后端静默失败"""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('127.0.0.1', 0))
+        return s.getsockname()[1]
+
+
+def wait_for_backend(port, timeout=15):
+    """轮询健康检查，等待 FastAPI 就绪"""
+    url = f'http://127.0.0.1:{port}/'
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=1) as r:
+                if r.status == 200:
+                    return True
+        except Exception:
+            pass
+        time.sleep(0.2)
+    return False
 
 
 # ========== 过渡页 HTML ==========
@@ -94,30 +120,31 @@ SPLASH_HTML = """
 """
 
 
-def run_backend():
+def run_backend(port):
     """后台线程启动 FastAPI"""
     try:
-        time.sleep(0.5)
+        time.sleep(0.3)
         os.chdir(BACKEND_DIR)
         from main import app
-        uvicorn.run(app, host="127.0.0.1", port=8000, log_level="warning")
+        uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
     except Exception as e:
         print(f"后端启动失败: {e}")
 
+
 def on_loaded(splash_window):
-    """
-    主窗口加载完成后，延迟关闭过渡窗口
-    """
-    time.sleep(1.5)
+    """主窗口加载完成后，延迟关闭过渡窗口"""
+    time.sleep(1.0)
     try:
         splash_window.destroy()
-    except:
+    except Exception:
         pass
 
 
 if __name__ == '__main__':
+    port = pick_free_port()
+
     # 1. 后台线程启动后端
-    backend_thread = threading.Thread(target=run_backend, daemon=True)
+    backend_thread = threading.Thread(target=run_backend, args=(port,), daemon=True)
     backend_thread.start()
 
     # 2. 先创建过渡窗口（无边框，置顶）
@@ -133,12 +160,15 @@ if __name__ == '__main__':
         resizable=False,
     )
 
-    # 3. 等后端就绪后，打开主窗口
+    # 3. 等后端就绪后，打开主窗口（健康检查替代固定 sleep）
     def open_main():
-        time.sleep(2.5)
+        ready = wait_for_backend(port, timeout=15)
+        if not ready:
+            print('后端启动超时，仍尝试打开主窗口')
+        url = pathlib.Path(FRONTEND_HTML).as_uri() + f'?api_port={port}'
         main_window = webview.create_window(
             title='Kali ToolKit · Lite',
-            url=FRONTEND_HTML,
+            url=url,
             width=1400,
             height=900,
             min_size=(1000, 600),

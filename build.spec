@@ -14,6 +14,7 @@ a = Analysis(
         ('backend/tools.db', 'backend'),
         ('frontend/index.html', 'frontend'),
         ('frontend/kali-logo.png', 'frontend'),
+        ('frontend/vendor', 'frontend/vendor'),
         ('data/tools_data.json', 'data'),
     ],
     hiddenimports=[

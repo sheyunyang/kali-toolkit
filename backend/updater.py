@@ -4,14 +4,22 @@
 启动后定期检查 GitHub Releases，发现新版本立即在后台下载；
 用户确认后通过临时脚本替换自身 exe 并重新启动。
 
+安全性：
+    下载完成后校验 SHA-256 哈希，与 Release 中附带的 SHA256SUMS.txt 比对，
+    防止下载被篡改或网络劫持。
+
 环境变量:
     GITHUB_TOKEN — 私有仓库访问令牌（可选；公开仓库不需要）
 
 发布新版本时的注意事项:
     1. 修改下方 APP_VERSION 为新版版本号（如 "0.2.0"）
-    2. 在 GitHub 创建 Release，tag 形如 v0.2.0，并上传 KaliToolKit.exe 附件
+    2. 在 GitHub 创建 Release，tag 形如 v0.2.0
+    3. 上传 KaliToolKit.exe 附件，并同时上传 SHA256SUMS.txt，内容为：
+         <exe 的 sha256 十六进制>  KaliToolKit.exe
+       （可用 certutil -hashfile KaliToolKit.exe SHA256 生成）
 """
 
+import hashlib
 import json
 import os
 import re
@@ -27,6 +35,7 @@ from pathlib import Path
 APP_VERSION = "0.2.0"                  # 每次发布必须同步修改！
 GITHUB_REPO = "sheyunyang/kali-toolkit"
 ASSET_NAME = "KaliToolKit.exe"         # Release 附件名（必须与上传的附件一致）
+SUMS_NAME = "SHA256SUMS.txt"           # 哈希清单附件名（必须与上传的附件一致）
 CHECK_INTERVAL = 15 * 60               # 每 15 分钟检查一次
 STARTUP_DELAY = 8                      # 启动 8 秒后首次检查
 API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
@@ -116,6 +125,29 @@ def _http_get_json(url, timeout=10):
         return json.loads(r.read().decode("utf-8"))
 
 
+def sha256_of(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def fetch_expected_hash(sums_url):
+    """从 SHA256SUMS.txt 中取出 ASSET_NAME 对应的期望哈希；取不到返回 None"""
+    try:
+        req = urllib.request.Request(sums_url, headers=_headers())
+        with urllib.request.urlopen(req, timeout=15) as r:
+            text = r.read().decode("utf-8", errors="replace")
+    except Exception:
+        return None
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[-1].lstrip("*") == ASSET_NAME:
+            return parts[0].lower()
+    return None
+
+
 def check_once():
     """
     检查一次更新。
@@ -145,10 +177,16 @@ def check_once():
         _set_state(state="error", error=f"新版本 {latest} 未找到 {ASSET_NAME} 附件")
         return None
 
+    sums_asset = next(
+        (a for a in data.get("assets", []) if a.get("name") == SUMS_NAME),
+        None,
+    )
+
     return {
         "version": latest,
         "url": asset["browser_download_url"],
         "page": data.get("html_url", ""),
+        "sums_url": sums_asset["browser_download_url"] if sums_asset else "",
     }
 
 
@@ -177,6 +215,14 @@ def download(release):
                 _set_state(progress=pct, downloaded_bytes=got, total_bytes=total)
         if total and got < total:
             raise IOError("文件下载不完整")
+
+        # 完整性校验：与 Release 附带的 SHA256SUMS.txt 比对
+        expected = fetch_expected_hash(release["sums_url"]) if release.get("sums_url") else None
+        if expected:
+            actual = sha256_of(tmp)
+            if actual != expected:
+                raise IOError(f"SHA-256 校验失败（期望 {expected[:16]}…，实际 {actual[:16]}…），已阻止安装")
+
         os.replace(tmp, dest)
         _set_state(state="ready", progress=100)
     except Exception as e:
@@ -243,5 +289,18 @@ def install_and_restart():
         return False, f"无法启动更新脚本：{e}"
 
     # 1 秒后强制退出，让辅助脚本接管（os._exit 不跑清理，立即释放 exe 占用）
-    threading.Timer(1.0, lambda: os._exit(0)).start()
+    def _delayed_exit():
+        # 先尽力关闭所有窗口，避免界面僵死；失败也不阻塞更新流程
+        try:
+            import webview
+            for w in list(webview.windows):
+                try:
+                    w.destroy()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        os._exit(0)
+
+    threading.Timer(1.0, _delayed_exit).start()
     return True, "正在重启以完成更新…"

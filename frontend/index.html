@@ -4,9 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kali ToolKit · 极客版</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+    <!-- 本地打包的第三方依赖，离线可用 -->
+    <link rel="stylesheet" href="vendor/fonts/jbmono.css" />
+    <link rel="stylesheet" href="vendor/css/all.min.css" />
+    <script src="vendor/js/vue.global.prod.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -316,7 +317,7 @@
         .loading { text-align: center; padding: 40px; color: var(--text-secondary); }
 
         /* ============================================================
-           开机动画（总时长 23 秒）
+           开机动画（总时长约 8 秒，点击可跳过）
            ============================================================ */
         #boot-screen {
             position: fixed;
@@ -325,6 +326,17 @@
             z-index: 9999;
             overflow: hidden;
             will-change: opacity;
+            cursor: pointer;
+        }
+        .boot-skip-hint {
+            position: absolute;
+            bottom: 24px;
+            right: 32px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #475569;
+            letter-spacing: 3px;
+            animation: blink 1.5s ease-in-out infinite;
         }
         .boot-scene {
             position: absolute;
@@ -338,8 +350,8 @@
             will-change: opacity;
         }
 
-        /* 场景 1：制作方（0-5s） */
-        #scene-1 { animation: sceneShow 5s ease-in-out; }
+        /* 场景 1：制作方（0-1.8s） */
+        #scene-1 { animation: sceneShow 1.8s ease-in-out; }
         .boot-text-creator {
             font-family: 'JetBrains Mono', monospace;
             font-size: 52px;
@@ -348,7 +360,7 @@
             letter-spacing: 14px;
             text-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
             opacity: 0;
-            animation: textFadeInOut 5s ease-in-out;
+            animation: textFadeInOut 1.8s ease-in-out;
         }
         .boot-text-creator-en {
             font-family: 'JetBrains Mono', monospace;
@@ -357,11 +369,11 @@
             letter-spacing: 6px;
             margin-top: 24px;
             opacity: 0;
-            animation: textFadeInOut 5s ease-in-out 0.5s;
+            animation: textFadeInOut 1.8s ease-in-out 0.2s;
         }
 
-        /* 场景 2：致敬完整版（5-13s，8秒） */
-        #scene-2 { animation: sceneShow 8s ease-in-out 5s; }
+        /* 场景 2：致敬完整版（1.8-4.8s，3秒） */
+        #scene-2 { animation: sceneShow 3s ease-in-out 1.8s; }
         .boot-text-tribute-full {
             font-family: 'JetBrains Mono', monospace;
             font-size: 48px;
@@ -370,7 +382,7 @@
             letter-spacing: 8px;
             text-shadow: 0 0 35px rgba(0, 240, 255, 0.7);
             opacity: 0;
-            animation: textFadeInOut 8s ease-in-out 5s;
+            animation: textFadeInOut 3s ease-in-out 1.8s;
         }
         .boot-text-tribute-full-en {
             font-family: 'JetBrains Mono', monospace;
@@ -380,7 +392,7 @@
             margin-top: 16px;
             text-transform: uppercase;
             opacity: 0;
-            animation: textFadeInOut 8s ease-in-out 5.5s;
+            animation: textFadeInOut 3s ease-in-out 2.1s;
         }
         .boot-text-tribute-sub {
             font-family: 'JetBrains Mono', monospace;
@@ -389,7 +401,7 @@
             letter-spacing: 6px;
             margin-top: 36px;
             opacity: 0;
-            animation: textFadeInOut 8s ease-in-out 6s;
+            animation: textFadeInOut 3s ease-in-out 2.4s;
         }
         .boot-text-tribute-sub-en {
             font-family: 'JetBrains Mono', monospace;
@@ -399,16 +411,16 @@
             margin-top: 14px;
             font-style: italic;
             opacity: 0;
-            animation: textFadeInOut 8s ease-in-out 6.5s;
+            animation: textFadeInOut 3s ease-in-out 2.7s;
         }
 
-        /* 场景 3：Kali Logo（13-18s，5秒） */
-        #scene-3 { animation: sceneShow 5s ease-in-out 13s; }
+        /* 场景 3：Kali Logo（4.8-7s，2.2秒） */
+        #scene-3 { animation: sceneShow 2.2s ease-in-out 4.8s; }
         .kali-logo {
             width: 340px;
             height: 340px;
             opacity: 0;
-            animation: logoFadeIn 1.5s ease-out 13s forwards;
+            animation: logoFadeIn 1s ease-out 4.8s forwards;
         }
         .kali-logo img {
             width: 100%;
@@ -424,7 +436,7 @@
             letter-spacing: 20px;
             margin-top: 32px;
             opacity: 0;
-            animation: logoTextFadeIn 1.2s ease-out 14s forwards;
+            animation: logoTextFadeIn 0.8s ease-out 5.5s forwards;
             text-shadow: 0 0 35px rgba(0, 240, 255, 0.8);
         }
         .kali-subtext {
@@ -435,11 +447,11 @@
             margin-top: 18px;
             font-style: italic;
             opacity: 0;
-            animation: logoTextFadeIn 1.2s ease-out 14.8s forwards;
+            animation: logoTextFadeIn 0.8s ease-out 6.1s forwards;
         }
 
-        /* 场景 4：致敬开源（18-22s，4秒） */
-        #scene-4 { animation: sceneShow 4s ease-in-out 18s; }
+        /* 场景 4：致敬开源（7-8.4s，1.4秒） */
+        #scene-4 { animation: sceneShow 1.4s ease-in-out 7s; }
         .boot-text-opensource {
             font-family: 'JetBrains Mono', monospace;
             font-size: 52px;
@@ -448,7 +460,7 @@
             letter-spacing: 12px;
             text-shadow: 0 0 35px rgba(16, 185, 129, 0.7);
             opacity: 0;
-            animation: textFadeInOut 4s ease-in-out 18s;
+            animation: textFadeInOut 1.4s ease-in-out 7s;
         }
         .boot-text-opensource-en {
             font-family: 'JetBrains Mono', monospace;
@@ -458,7 +470,7 @@
             margin-top: 24px;
             text-transform: uppercase;
             opacity: 0;
-            animation: textFadeInOut 4s ease-in-out 18.5s;
+            animation: textFadeInOut 1.4s ease-in-out 7.2s;
         }
 
         /* 关键帧 */
@@ -482,13 +494,17 @@
             0% { opacity: 0; transform: translate3d(0, 12px, 0); }
             100% { opacity: 1; transform: translate3d(0, 0, 0); }
         }
+        @keyframes blink {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
         .boot-fadeout {
             position: absolute;
             inset: 0;
             background: #0a0e17;
             opacity: 0;
             pointer-events: none;
-            animation: finalFadeOut 1s ease-out 22s forwards;
+            animation: finalFadeOut 0.8s ease-out 8.4s forwards;
         }
         @keyframes finalFadeOut {
             0% { opacity: 0; }
@@ -532,6 +548,7 @@
         </div>
 
         <div class="boot-fadeout" id="boot-fadeout"></div>
+        <div class="boot-skip-hint">点击跳过 ›</div>
     </div>
 
     <div class="grid-bg"></div>
@@ -607,7 +624,7 @@
                 </div>
                 <div class="tool-item" v-for="tool in tools" :key="tool.id"
                      :class="{ active: selectedTool && selectedTool.id === tool.id }"
-                     @click="selectedTool = tool">
+                     @click="selectTool(tool)">
                     <span class="icon">{{ tool.icon_emoji || '🔧' }}</span>
                     <div class="info">
                         <div class="name">{{ tool.name }}</div>
@@ -638,7 +655,7 @@
                 </div>
 
                 <div v-for="(cmd, idx) in selectedTool.commands" :key="idx" class="command-block">
-                    <button class="copy-btn" @click="copyText(cmd.command_template)" title="复制命令">
+                    <button class="copy-btn" @click="copyText(cmd.command_template, $event)" title="复制命令">
                         <i class="fas fa-copy"></i>
                     </button>
                     <div class="cmd">$ {{ cmd.command_template }}</div>
@@ -670,7 +687,9 @@
 
     <script>
         const { createApp } = Vue;
-        const API_BASE = 'http://127.0.0.1:8000';
+        // 后端端口由 app.py 通过 URL 参数注入（file:// 页面也支持 query string），默认 8000
+        const API_PORT = new URLSearchParams(location.search).get('api_port') || '8000';
+        const API_BASE = 'http://127.0.0.1:' + API_PORT;
 
         createApp({
             data() {
@@ -725,7 +744,7 @@
                         const params = new URLSearchParams();
                         if (this.searchQuery.trim()) params.append('q', this.searchQuery.trim());
                         if (this.selectedTag) params.append('tag', this.selectedTag);
-                        params.append('limit', 2000);
+                        params.append('limit', 100);
 
                         const res = await fetch(API_BASE + '/api/search?' + params.toString());
                         const data = await res.json();
@@ -733,7 +752,7 @@
 
                         if (this.tools.length > 0) {
                             const stillExists = this.selectedTool && this.tools.find(t => t.id === this.selectedTool.id);
-                            if (!stillExists) this.selectedTool = this.tools[0];
+                            this.selectTool(stillExists ? this.selectedTool : this.tools[0]);
                         } else {
                             this.selectedTool = null;
                         }
@@ -744,12 +763,30 @@
                         this.loading = false;
                     }
                 },
+                // 列表只含摘要；选中后再按需加载完整详情（命令、关联工具）
+                async selectTool(tool) {
+                    if (!tool) { this.selectedTool = null; return; }
+                    this.selectedTool = tool;
+                    try {
+                        const res = await fetch(API_BASE + '/api/tool/' + tool.id);
+                        if (!res.ok) return;
+                        const full = await res.json();
+                        if (this.selectedTool && this.selectedTool.id === full.id) {
+                            this.selectedTool = full;
+                        }
+                        // 同步列表中的摘要数据
+                        const idx = this.tools.findIndex(t => t.id === full.id);
+                        if (idx >= 0) this.tools[idx] = full;
+                    } catch (e) {
+                        console.error('加载详情失败', e);
+                    }
+                },
                 async searchAndSelect(name) {
                     this.searchQuery = name;
                     this.selectedTag = '';
                     await this.doSearch();
                 },
-                copyText(text) {
+                copyText(text, event) {
                     navigator.clipboard.writeText(text).then(() => {
                         const btn = event.target.closest('.copy-btn');
                         if (btn) {
@@ -795,15 +832,18 @@
                 this.loadTags();
                 this.doSearch();
 
-                // 23 秒后关闭开机动画
-                setTimeout(() => {
-                    const bootScreen = document.getElementById('boot-screen');
-                    if (bootScreen) {
-                        bootScreen.style.transition = 'opacity 1s ease';
-                        bootScreen.style.opacity = '0';
-                        setTimeout(() => bootScreen.remove(), 1000);
-                    }
-                }, 23000);
+                // 约 8 秒后关闭开机动画；点击任意处立即跳过
+                const bootScreen = document.getElementById('boot-screen');
+                let bootDone = false;
+                const closeBoot = () => {
+                    if (bootDone || !bootScreen) return;
+                    bootDone = true;
+                    bootScreen.style.transition = 'opacity 0.6s ease';
+                    bootScreen.style.opacity = '0';
+                    setTimeout(() => bootScreen.remove(), 600);
+                };
+                if (bootScreen) bootScreen.addEventListener('click', closeBoot);
+                setTimeout(closeBoot, 8500);
 
                 setInterval(this.checkOnline, 10000);
                 setInterval(this.checkUpdate, 5000);
